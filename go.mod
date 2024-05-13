@@ -1,4 +1,4 @@
-module github.io/briannbig/natsream
+module github.com/briannbig/natsream
 
 go 1.22.2
 
