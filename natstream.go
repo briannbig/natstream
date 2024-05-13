@@ -19,6 +19,7 @@ type (
 	}
 )
 
+// connets to jetstream with given *nats.Conn and creates a jetstream.Stream with given streamName and subjects
 func New(ctx context.Context, nc *nats.Conn, streamName string, subjects []string) Queue {
 	js, err := jetstream.New(nc)
 	if err != nil {
@@ -37,6 +38,8 @@ func New(ctx context.Context, nc *nats.Conn, streamName string, subjects []strin
 	return Queue{stream: s}
 }
 
+
+// creates a nats jetstream consumer 
 func (q Queue) RegisterConsumer(ctx context.Context, handler func(jetstream.Msg), consumerDurableName string) error {
 
 	cons, _ := q.stream.CreateOrUpdateConsumer(ctx, jetstream.ConsumerConfig{
