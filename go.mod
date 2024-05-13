@@ -1,4 +1,4 @@
-module github.com/briannbig/natsream
+module github.com/briannbig/natstream
 
 go 1.22.2
 
