@@ -10,11 +10,17 @@ go get github.com/briannbig/natstream
 
 ```go
 import (
-    "os"
+    
+	"context"
+	"os"
     "time"
     
     "github.com/nats-io/nats.go"
     "github.com/briannbig/natstream"
+)
+
+const (
+	consumerDurableName = "notifications.consumer"
 )
 
 func main() {
@@ -35,7 +41,7 @@ func main() {
     // initialize jetstream
 	q := natstream.New(ctx, nc, "notification", []string{"subject.one","subject.two","subject.three"})
 
-	svc := service.Notification()
+	svc := NotificationService()
 
     // Create consumer
 	q.RegisterConsumer(ctx, svc.Notify, consumerDurableName)
