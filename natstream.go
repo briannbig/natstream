@@ -15,7 +15,7 @@ type (
 	}
 
 	Queue struct {
-		stream jetstream.Stream
+		Stream jetstream.Stream
 	}
 )
 
@@ -35,14 +35,14 @@ func New(ctx context.Context, nc *nats.Conn, streamName string, subjects []strin
 		log.Fatalf("error creating stream --- %s", err.Error())
 	}
 
-	return Queue{stream: s}
+	return Queue{Stream: s}
 }
 
 
 // creates a nats jetstream consumer 
 func (q Queue) RegisterConsumer(ctx context.Context, handler func(jetstream.Msg), consumerDurableName string) error {
 
-	cons, _ := q.stream.CreateOrUpdateConsumer(ctx, jetstream.ConsumerConfig{
+	cons, _ := q.Stream.CreateOrUpdateConsumer(ctx, jetstream.ConsumerConfig{
 		Durable:   consumerDurableName,
 		AckPolicy: jetstream.AckExplicitPolicy,
 	})
