@@ -2,7 +2,7 @@ module github.com/briannbig/natstream
 
 go 1.22.2
 
-require github.com/nats-io/nats.go v1.35.0
+require github.com/nats-io/nats.go v1.36.0
 
 require (
 	github.com/klauspost/compress v1.17.2 // indirect
