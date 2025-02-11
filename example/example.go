@@ -24,6 +24,7 @@ func main() {
 		url = nats.DefaultURL
 	}
 	nc, err := nats.Connect(url)
+	defer nc.Close()
 
 	if err != nil {
 		log.Printf("could not connect to queue --- %s", err.Error())
@@ -31,12 +32,23 @@ func main() {
 	}
 
 	// initialize jetstream
-	q := natstream.New(ctx, nc, "notification", []string{"subject.one", "subject.two", "subject.three"})
+	q, err := natstream.New(ctx, nc, natstream.QueueConfig{
+		StreamName: "notification-stream",
+		Subjects:   []string{"subject.one", "subject.two", "subject.three"},
+		Storage:    jetstream.MemoryStorage,
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer q.Close()
 
 	svc := NotificationService()
 
 	// Create consumer
-	q.RegisterConsumer(ctx, svc.Notify, consumerDurableName)
+	q.RegisterConsumer(ctx, natstream.ConsumerConfig{
+		DurableName: consumerDurableName,
+		AckPolicy:   jetstream.AckAllPolicy,
+	}, svc.Notify)
 
 	//... rest of your code
 

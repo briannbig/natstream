@@ -2,58 +2,108 @@ package natstream
 
 import (
 	"context"
-	"log"
+	"fmt"
 
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
 )
 
 type (
-	consumer struct {
-		con      jetstream.Consumer
-		callback func(jetstream.Msg)
+	// QueueConfig holds the configuration for a jetstream queue
+	QueueConfig struct {
+		StreamName string
+		Subjects   []string
+		Storage    jetstream.StorageType
 	}
 
+	// Queue represents a jetstream queue
 	Queue struct {
 		Stream jetstream.Stream
 		Js     jetstream.JetStream
 	}
+
+	// ConsumerConfig holds the configuration for a jetstream consumer
+	ConsumerConfig struct {
+		DurableName   string
+		AckPolicy     jetstream.AckPolicy
+		MaxDeliver    int
+		FilterSubject string
+	}
 )
 
-// connets to jetstream with given *nats.Conn and creates a jetstream.Stream with given streamName and subjects
-func New(ctx context.Context, nc *nats.Conn, streamName string, subjects []string) Queue {
+// New connets to jetstream with given *nats.Conn and creates a jetstream.Stream with given streamName and subjects
+func New(ctx context.Context, nc *nats.Conn, cfg QueueConfig) (*Queue, error) {
+	if nc == nil {
+		return nil, fmt.Errorf("nats connection is nil")
+	}
+
+	if cfg.StreamName == "" {
+		return nil, fmt.Errorf("stream name cannot be empty")
+	}
+
+	if len(cfg.Subjects) == 0 {
+		return nil, fmt.Errorf("at least one subject is required")
+	}
+
 	js, err := jetstream.New(nc)
 	if err != nil {
-		log.Fatalf("Error connecting to jetstream --- %s", err.Error())
+		return nil, fmt.Errorf("failed to create jestream client --- %s", err.Error())
+	}
+
+	if cfg.Storage.String() == "" {
+		cfg.Storage = jetstream.MemoryStorage
 	}
 
 	s, err := js.CreateOrUpdateStream(ctx, jetstream.StreamConfig{
-		Name:     streamName,
-		Subjects: subjects,
-		Storage:  jetstream.MemoryStorage,
+		Name:     cfg.StreamName,
+		Subjects: cfg.Subjects,
+		Storage:  cfg.Storage,
 	})
+
 	if err != nil {
-		log.Fatalf("error creating stream --- %s", err.Error())
+		return nil, fmt.Errorf("error creating stream --- %w", err)
 	}
 
-	return Queue{Stream: s, Js: js}
+	return &Queue{
+		Stream: s,
+		Js:     js,
+	}, nil
 }
 
-// creates a nats jetstream consumer
-func (q Queue) RegisterConsumer(ctx context.Context, handler func(jetstream.Msg), consumerDurableName string) error {
-
-	cons, _ := q.Stream.CreateOrUpdateConsumer(ctx, jetstream.ConsumerConfig{
-		Durable:   consumerDurableName,
-		AckPolicy: jetstream.AckExplicitPolicy,
-	})
-	return newConsumer(cons, handler)
-}
-
-func newConsumer(con jetstream.Consumer, handler func(jetstream.Msg)) error {
-	var c = &consumer{
-		con:      con,
-		callback: handler,
+// RegisterConsumer creates a nats jetstream consumer
+func (q Queue) RegisterConsumer(ctx context.Context, cfg ConsumerConfig, handler func(jetstream.Msg)) error {
+	if handler == nil {
+		return fmt.Errorf("handler function is nil")
 	}
-	_, err := c.con.Consume(c.callback)
-	return err
+
+	if cfg.DurableName == "" {
+		return fmt.Errorf("durable name cannot be empty")
+	}
+
+	consumerConfig := jetstream.ConsumerConfig{
+		Durable:   cfg.DurableName,
+		AckPolicy: cfg.AckPolicy,
+	}
+
+	if cfg.MaxDeliver > 0 {
+		consumerConfig.MaxDeliver = cfg.MaxDeliver
+	}
+
+	if cfg.FilterSubject != "" {
+		consumerConfig.FilterSubject = cfg.FilterSubject
+	}
+
+	_, err := q.Stream.CreateOrUpdateConsumer(ctx, consumerConfig)
+	if err != nil {
+		return fmt.Errorf("failed to start consumer: %w", err)
+	}
+
+	return nil
+}
+
+// Close closes the jetstream connection
+func (q *Queue) Close() error {
+	q.Js.Conn().Close()
+
+	return nil
 }
