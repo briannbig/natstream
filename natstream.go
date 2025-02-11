@@ -3,6 +3,7 @@ package natstream
 import (
 	"context"
 	"fmt"
+	"log"
 
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
@@ -73,11 +74,11 @@ func New(ctx context.Context, nc *nats.Conn, cfg QueueConfig) (*Queue, error) {
 // RegisterConsumer creates a nats jetstream consumer
 func (q Queue) RegisterConsumer(ctx context.Context, cfg ConsumerConfig, handler func(jetstream.Msg)) error {
 	if handler == nil {
-		return fmt.Errorf("handler function is nil")
+		return fmt.Errorf("::natstream ---handler function is nil")
 	}
 
 	if cfg.DurableName == "" {
-		return fmt.Errorf("durable name cannot be empty")
+		return fmt.Errorf("::natsream --- durable name cannot be empty")
 	}
 
 	consumerConfig := jetstream.ConsumerConfig{
@@ -95,13 +96,17 @@ func (q Queue) RegisterConsumer(ctx context.Context, cfg ConsumerConfig, handler
 
 	consumer, err := q.Stream.CreateOrUpdateConsumer(ctx, consumerConfig)
 	if err != nil {
-		return fmt.Errorf("failed to create or update consumer: %w", err)
+		return fmt.Errorf("::natsream --- failed to create or update consumer: %w", err)
 	}
+
+	log.Printf("::natsream --- consumer %s created", cfg.DurableName)
 
 	cc, err := consumer.Consume(handler)
 	if err != nil {
-		return fmt.Errorf("failed to start consumer: %w", err)
+		return fmt.Errorf("::natstream --- failed to start consumer: %w", err)
 	}
+
+	log.Printf("::natstream --- consumer %s started", cfg.DurableName)
 
 	go func() {
 		<-ctx.Done()
