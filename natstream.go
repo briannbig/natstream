@@ -93,17 +93,25 @@ func (q Queue) RegisterConsumer(ctx context.Context, cfg ConsumerConfig, handler
 		consumerConfig.FilterSubject = cfg.FilterSubject
 	}
 
-	_, err := q.Stream.CreateOrUpdateConsumer(ctx, consumerConfig)
+	consumer, err := q.Stream.CreateOrUpdateConsumer(ctx, consumerConfig)
+	if err != nil {
+		return fmt.Errorf("failed to create or update consumer: %w", err)
+	}
+
+	cc, err := consumer.Consume(handler)
 	if err != nil {
 		return fmt.Errorf("failed to start consumer: %w", err)
 	}
 
+	go func() {
+		<-ctx.Done()
+		cc.Stop()
+	}()
 	return nil
 }
 
 // Close closes the jetstream connection
 func (q *Queue) Close() error {
 	q.Js.Conn().Close()
-
 	return nil
 }
