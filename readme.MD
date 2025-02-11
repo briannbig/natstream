@@ -38,14 +38,25 @@ func main() {
 		os.Exit(1)
 	}
 
-    // initialize jetstream
-	q := natstream.New(ctx, nc, "notification", []string{"subject.one","subject.two","subject.three"})
+   // initialize jetstream
+	q, err := natstream.New(ctx, nc, natstream.QueueConfig{
+		StreamName: "notification-stream",
+		Subjects:   []string{"subject.one", "subject.two", "subject.three"},
+		Storage:    jetstream.MemoryStorage,
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer q.Close()
 
 	svc := NotificationService()
 
-    // Create consumer
-	q.RegisterConsumer(ctx, svc.Notify, consumerDurableName)
-
+	// Create consumer
+	q.RegisterConsumer(ctx, natstream.ConsumerConfig{
+		DurableName: consumerDurableName,
+		AckPolicy:   jetstream.AckAllPolicy,
+	}, svc.Notify)
+	
     //... rest of your code
 
 }
