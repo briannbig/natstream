@@ -110,6 +110,7 @@ func (q Queue) RegisterConsumer(ctx context.Context, cfg ConsumerConfig, handler
 
 	go func() {
 		<-ctx.Done()
+		log.Printf("::natstream --- stoping consumer %s", cfg.DurableName)
 		cc.Stop()
 	}()
 	return nil
@@ -117,6 +118,7 @@ func (q Queue) RegisterConsumer(ctx context.Context, cfg ConsumerConfig, handler
 
 // Close closes the jetstream connection
 func (q *Queue) Close() error {
+	log.Printf("::natstream --- closing jetstream connection")
 	q.Js.Conn().Close()
 	return nil
 }
