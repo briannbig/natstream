@@ -71,6 +71,15 @@ func New(ctx context.Context, nc *nats.Conn, cfg QueueConfig) (*Queue, error) {
 	}, nil
 }
 
+// Publish publishes a message to the stream
+func (q *Queue) Publish(ctx context.Context, subject string, data []byte) error {
+	_, err := q.Js.Publish(ctx, subject, data)
+	if err != nil {
+		return fmt.Errorf("failed to publish message: %w", err)
+	}
+	return nil
+}
+
 // RegisterConsumer creates a nats jetstream consumer
 func (q Queue) RegisterConsumer(ctx context.Context, cfg ConsumerConfig, handler func(jetstream.Msg)) error {
 	if handler == nil {

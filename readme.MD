@@ -1,4 +1,4 @@
-A nats jetstream golang cunsumer utility
+A nats jetstream golang publisher/consumer utility
 
 ## getting started
 
