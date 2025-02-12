@@ -82,7 +82,7 @@ func (q Queue) RegisterConsumer(ctx context.Context, cfg ConsumerConfig, handler
 	}
 
 	if cfg.AckPolicy.String() == "" {
-		cfg.AckPolicy = jetstream.AckAllPolicy
+		cfg.AckPolicy = jetstream.AckExplicitPolicy
 	}
 
 	consumerConfig := jetstream.ConsumerConfig{
