@@ -81,9 +81,14 @@ func (q Queue) RegisterConsumer(ctx context.Context, cfg ConsumerConfig, handler
 		return fmt.Errorf("::natsream --- durable name cannot be empty")
 	}
 
+	if cfg.AckPolicy.String() == "" {
+		cfg.AckPolicy = jetstream.AckAllPolicy
+	}
+
 	consumerConfig := jetstream.ConsumerConfig{
-		Durable:   cfg.DurableName,
-		AckPolicy: cfg.AckPolicy,
+		Durable:       cfg.DurableName,
+		AckPolicy:     cfg.AckPolicy,
+		DeliverPolicy: jetstream.DeliverAllPolicy,
 	}
 
 	if cfg.MaxDeliver > 0 {
