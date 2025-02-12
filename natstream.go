@@ -106,7 +106,21 @@ func (q Queue) RegisterConsumer(ctx context.Context, cfg ConsumerConfig, handler
 
 	log.Printf("::natsream --- consumer %s created", cfg.DurableName)
 
-	cc, err := consumer.Consume(handler)
+	// Wrap the handler to add logging and error handling
+	wrappedHandler := func(msg jetstream.Msg) {
+		log.Printf("::natstream --- received message on subject: %s", msg.Subject())
+
+		defer func() {
+			if r := recover(); r != nil {
+				log.Printf("::natstream --- panic in message handler: %v", r)
+				msg.Nak()
+			}
+		}()
+
+		handler(msg)
+	}
+
+	cc, err := consumer.Consume(wrappedHandler)
 	if err != nil {
 		return fmt.Errorf("::natstream --- failed to start consumer: %w", err)
 	}
