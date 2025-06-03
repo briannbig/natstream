@@ -1,9 +1,10 @@
 module github.com/briannbig/natstream
 
-go 1.22.2
+go 1.23.0
+
 toolchain go1.24.1
 
-require github.com/nats-io/nats.go v1.41.2
+require github.com/nats-io/nats.go v1.43.0
 
 require (
 	github.com/klauspost/compress v1.18.0 // indirect
